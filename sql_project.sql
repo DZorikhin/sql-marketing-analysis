@@ -1,4 +1,4 @@
-﻿-- create static table WITH permissions for product
+﻿-- create static table with permissions for product
 drop table if exists [UsersTmp].[name].[perm_review]
 
 SELECT DISTINCT  product_permissions.consumerId, product_permissions.resourceId,
@@ -21,7 +21,7 @@ FROM
 	AND flags!=2
 	AND rn < 15
 
--- create temporary table based on join on AbonId FROM ProductAccounts
+-- create temporary table based on join on AbonId from ProductAccounts
 drop table if exists #permissions_users_Product
 SELECT DISTINCT eaa.consumerId, ea.UserId as PortalUserIdProduct, [begin],
 [end], rn
@@ -30,7 +30,7 @@ FROM [UsersTmp].[name].[perm_review] AS eaa  WITH (NOLOCK)
 LEFT JOIN [Requisites].[dbo].[ProductAccounts] AS ea  WITH (NOLOCK)
   ON eaa.ConsumerID  = ea.AbonId
 
--- create temporary table based on join on ProductId FROM ProductMain
+-- create temporary table based on join on ProductId from ProductMain
 drop table if exists #permissions_users_Product_Main
 SELECT DISTINCT ext.consumerId, PortalUserIdMain,
 em.UserId AS PortalUserIdProduct, [begin], [end], rn
@@ -39,7 +39,7 @@ FROM #permissions_users_Main AS ext WITH (NOLOCK)
 LEFT JOIN [Requisites].[dbo].[ProductMain] AS em WITH (NOLOCK)
   ON ext.ConsumerID = em.ProductId
 
--- create temporary table WITHout NULL values
+-- create temporary table without null values
 drop table if exists #perm_to_merge
 SELECT DISTINCT consumerId, PortalUserIdMain, PortalUserIdProduct, [begin],
 [end], rn
@@ -54,8 +54,8 @@ JOIN [UsersTmp].[name].[perm_review] AS gp WITH (nolock)
 	ON cp.consumerId = gp.consumerId
 GROUP BY gp.resourceId
 
--- create temporary table WITH portal Id users WITH union clause for convenient
--- merge WITH Clickhouse data
+-- create temporary table with portal Id users with union clause for convenient
+-- merge with Clickhouse data
 drop table if exists #t
 SELECT DISTINCT PortalUserIdMain AS PortalUserIdPerm, [begin], [end], rn
 into #t
@@ -64,7 +64,7 @@ FROM
 SELECT DISTINCT PortalUserIdMain, [begin], [end], rn
 FROM #perm_to_merge
 WHERE PortalUserIdMain IS NOT NULL
-union
+UNION
 SELECT DISTINCT PortalUserIdProduct, [begin], [end], rn
 FROM #perm_to_merge
 WHERE PortalUserIdProduct IS NOT NULL
@@ -95,7 +95,7 @@ CREATE INDEX ix_#perm_to_merge_PortalUserIdMain ON #perm_to_merge (PortalUserIdM
 CREATE INDEX ix_#perm_to_merge_PortalUserIdProduct ON #perm_to_merge (PortalUserIdProduct);
 CREATE INDEX ix_#Product_2018_PortalUserId ON #Product_2018 (PortalUserId);
 
--- SEGMENT 1. Entered Product WITHout permissions in 2018 (Demo_users)
+-- SEGMENT 1. Entered Product without permissions in 2018 (Demo_users)
 -- unique portal users number in 2018 for Product demo is equal to XXXX
 -- unique IP addresses number in 2018 for Product demo is equal to XXXX
 SELECT COUNT(DISTINCT PortalUserId) AS DemoEntry, COUNT(DISTINCT ClientIp) AS IPUsers
@@ -104,7 +104,7 @@ LEFT JOIN #t AS t WITH (nolock)
 	ON ch.PortalUserId = t.PortalUserIdPerm
 WHERE PortalUserIdPerm IS NULL
 
--- unique portal users number in 2018 for Product demo WITH scope/Product/inited requisite is equal to XXXX
+-- unique portal users number in 2018 for Product demo with scope/Product/inited requisite is equal to XXXX
 SELECT COUNT(DISTINCT PortalUserId) AS DemoEntry
 FROM #Product_2018 AS ch WITH (nolock)
 LEFT JOIN #t AS t WITH (nolock)
@@ -122,14 +122,14 @@ WHERE PortalUserIdPerm IS NULL
 GROUP BY ClientIp
 HAVING COUNT(DISTINCT PortalUserId) > 1
 
--- number of unique portal users who had several registrations FROM single IP is equal to XXXX
+-- number of unique portal users who had several registrations from single IP is equal to XXXX
 SELECT COUNT(DISTINCT PortalUserId)
 FROM #Product_2018 AS ch WITH (nolock)
 LEFT JOIN #t AS t WITH (nolock)
 	ON ch.PortalUserId = t.PortalUserIdPerm
 WHERE
 	PortalUserIdPerm IS NULL
-	and ClientIp in (
+	AND ClientIp IN (
 		SELECT ClientIp
 		FROM #Product_2018 AS ch WITH (nolock)
 		LEFT JOIN #t AS t WITH (nolock)
@@ -171,13 +171,13 @@ LEFT JOIN #t AS t WITH (nolock)
 WHERE t.rn = 1 AND ch.LastDayEntry > t.[end]
 
 
--- unique portal users number in 2018 for Product demo WITH scope/Product/inited requisite is equal to XXXX
+-- unique portal users number in 2018 for Product demo with scope/Product/inited requisite is equal to XXXX
 SELECT COUNT(DISTINCT PortalUserId) AS DemoEntry
 FROM #Product_2018 AS ch WITH (nolock)
 LEFT JOIN #t AS t WITH (nolock)
 	ON ch.PortalUserId = t.PortalUserIdPerm
 WHERE t.rn = 1 AND ch.LastDayEntry > t.[end]
-AND PortalUserId  in (SELECT DISTINCT Id FROM [Requisites].[dbo].[UserRequisites] WITH (nolock)
+AND PortalUserId IN (SELECT DISTINCT Id FROM [Requisites].[dbo].[UserRequisites] WITH (nolock)
 WHERE [scope/Product/inited] IS NOT NULL)
 
 -- XXXX unique IP addresses which have been used to register more than 1 portal user
@@ -189,14 +189,14 @@ WHERE t.rn = 1 AND ch.LastDayEntry > t.[end]
 GROUP BY ClientIp
 HAVING COUNT(DISTINCT PortalUserId) > 1
 
--- number of unique portal users who had several registrations FROM single IP is equal to XXXX
+-- number of unique portal users who had several registrations from single IP is equal to XXXX
 SELECT COUNT(DISTINCT PortalUserId)
 FROM #Product_2018 AS ch WITH (nolock)
 LEFT JOIN #t AS t WITH (nolock)
 	ON ch.PortalUserId = t.PortalUserIdPerm
 WHERE
 	t.rn = 1 AND ch.LastDayEntry > t.[end]
-	and ClientIp in (
+	AND ClientIp IN (
 		SELECT ClientIp
 		FROM #Product_2018 AS ch WITH (nolock)
 		LEFT JOIN #t AS t WITH (nolock)
@@ -286,7 +286,7 @@ FROM #Product_2018 AS ch WITH (nolock)
 LEFT JOIN #bk_crossed AS bkc WITH (nolock)
 	ON ch.PortalUserId = bkc.PortalUserIdPerm
 WHERE [begin] > '2018-01-01' AND ch.FirstDayEntry < bkc.[begin]
-and PortalUserId  in (SELECT DISTINCT Id FROM [Requisites].[dbo].[UserRequisites] WITH (nolock)
+AND PortalUserId  IN (SELECT DISTINCT Id FROM [Requisites].[dbo].[UserRequisites] WITH (nolock)
 WHERE [scope/Product/inited] IS NOT NULL)
 
 -- XXXX unique IP addresses which have been used to register more than 1 portal user
@@ -304,7 +304,7 @@ FROM #Product_2018 AS ch WITH (nolock)
 LEFT JOIN #bk_crossed AS bkc WITH (nolock)
 	ON ch.PortalUserId = bkc.PortalUserIdPerm
 WHERE [begin] > '2018-01-01' AND ch.FirstDayEntry < bkc.[begin]
-	and ClientIp in (
+	AND ClientIp IN (
 		SELECT ClientIp
 		FROM #Product_2018 AS ch WITH (nolock)
 		LEFT JOIN #bk_crossed AS bkc WITH (nolock)
